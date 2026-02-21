@@ -17,7 +17,7 @@ List and summarize recent Claude sessions across all projects.
 
 1. Run the listing script with the user's timeframe argument:
    ```
-   bash ~/.claude/skills/list-plans/scripts/list-plans.sh $ARGUMENTS
+   bash {{SKILLS_DIR}}/list-plans/scripts/list-plans.sh $ARGUMENTS
    ```
    If `$ARGUMENTS` is empty, the script defaults to `24h`.
 
