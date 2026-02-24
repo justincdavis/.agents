@@ -1,0 +1,19 @@
+{
+  "name": "superpowers",
+  "repo": "https://github.com/obra/superpowers.git",
+  "enabled": true,
+  "targets": {
+    "claude": {
+      "marketplace": "obra/superpowers-marketplace",
+      "plugin": "superpowers@superpowers-marketplace"
+    },
+    "cursor": {
+      "type": "symlink",
+      "path": "."
+    },
+    "agents": {
+      "type": "symlink",
+      "path": "."
+    }
+  }
+}

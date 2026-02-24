@@ -35,6 +35,54 @@ Lists and summarizes recent Claude sessions across all projects. Accepts a timef
 | `./install.sh agents` | `~/.agents/skills/` |
 | `./install.sh claude --local` | `./.claude/skills/` (current directory) |
 
+## Plugins
+
+Third-party plugins are managed by `plugins.sh`, driven by JSON configs in `config/plugins/`.
+
+```bash
+./plugins.sh <target> [target...] [--only <plugin>]
+```
+
+**Targets:** `claude`, `cursor`, `agents`
+
+| Command | Effect |
+|---|---|
+| `./plugins.sh claude` | Install via Claude Code plugin marketplace |
+| `./plugins.sh cursor` | Symlink into `~/.cursor/plugins/` |
+| `./plugins.sh agents` | Symlink into `~/.agents/plugins/` |
+| `./plugins.sh cursor agents` | Both targets at once |
+| `./plugins.sh agents --only superpowers` | Install a specific plugin only |
+
+### Adding a new plugin
+
+Create a JSON file in `config/plugins/`:
+
+```json
+{
+  "name": "my-plugin",
+  "repo": "https://github.com/owner/repo.git",
+  "enabled": true,
+  "targets": {
+    "claude": {
+      "marketplace": "owner/repo-marketplace",
+      "plugin": "my-plugin@repo-marketplace"
+    },
+    "cursor": {
+      "type": "symlink",
+      "path": "."
+    },
+    "agents": {
+      "type": "symlink",
+      "path": "."
+    }
+  }
+}
+```
+
+- `enabled`: set to `false` to skip unless explicitly named with `--only`
+- `targets`: omit a key if the plugin doesn't support that target
+- `path`: subdirectory within the cloned repo to symlink (`.` for root)
+
 ## Authoring skills with `{{SKILLS_DIR}}`
 
 Skills often bundle helper scripts alongside the `SKILL.md`. To reference these scripts, use the `{{SKILLS_DIR}}` placeholder instead of hardcoding a path:

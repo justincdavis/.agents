@@ -1,0 +1,19 @@
+{
+  "name": "planning-with-files",
+  "repo": "https://github.com/OthmanAdi/planning-with-files.git",
+  "enabled": true,
+  "targets": {
+    "claude": {
+      "marketplace": "OthmanAdi/planning-with-files",
+      "plugin": "planning-with-files@planning-with-files"
+    },
+    "cursor": {
+      "type": "symlink",
+      "path": ".cursor"
+    },
+    "agents": {
+      "type": "symlink",
+      "path": "."
+    }
+  }
+}
