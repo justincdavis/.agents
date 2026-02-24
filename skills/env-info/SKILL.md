@@ -16,7 +16,7 @@ Gather and present comprehensive environment information.
 
 1. Run the detection script:
    ```
-   bash ~/.claude/skills/env-info/scripts/env-info.sh
+   bash {{SKILLS_DIR}}/env-info/scripts/env-info.sh
    ```
 2. Present the output cleanly to the user, preserving the section structure.
 3. After the output, add a brief **Summary** section highlighting:
