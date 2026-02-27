@@ -1,6 +1,6 @@
 ---
 name: create-skill
-description: Use when creating a new skill for Claude Code, Cursor, or .agents tooling - guides through brainstorming purpose, writing frontmatter, setting up directory structure, and using {{SKILLS_DIR}} conventions
+description: Use when creating a new skill for Claude Code, Cursor, or .agents tooling - guides through brainstorming purpose, writing frontmatter, setting up directory structure, and choosing install location
 disable-model-invocation: false
 user-invocable: true
 context: fork
@@ -10,7 +10,7 @@ allowed-tools: Bash, Read, Write, Edit, Glob, Grep, AskUserQuestion
 
 # Create Skill
 
-Guide for creating new skills. Brainstorm with the user, then generate a well-structured skill directory with proper frontmatter, `{{SKILLS_DIR}}` usage, and optional helper scripts.
+Guide for creating new skills. Brainstorm with the user, then generate a well-structured skill directory with proper frontmatter and optional helper scripts.
 
 ## Process
 
@@ -51,6 +51,9 @@ Ask the user these questions **one at a time** using `AskUserQuestion`. Skip any
 
 Ask these only when relevant:
 
+- **Install location** — "Should this skill be installed globally or locally?"
+  - **Global** (`~/.claude/skills/`): Available in all projects. Good for general-purpose skills.
+  - **Local** (`./.claude/skills/` in current project): Project-specific. Good for skills tied to a particular codebase.
 - **Helper scripts** — "Does this need bash helper scripts, or is the SKILL.md body sufficient?" Ask when the skill involves running commands or complex logic.
 - **Model** — Default to `haiku` for simple/scripted skills, `sonnet` for skills needing reasoning. Only ask if unclear.
 - **Arguments** — "Does this skill take arguments?" If yes, ask for the `argument-hint` format. Only relevant for user-invocable skills.
@@ -58,10 +61,13 @@ Ask these only when relevant:
 
 ## Step 2: Directory Structure
 
-Create under the target skills directory:
+Based on the user's install location choice, create the skill directory:
+
+- **Global:** `~/.claude/skills/{name}/`
+- **Local:** `./.claude/skills/{name}/`
 
 ```
-skills/{name}/
+{name}/
   SKILL.md              # Required
   scripts/              # Optional
     {name}.sh           # Helper script(s)
@@ -103,17 +109,19 @@ One-line summary of what this does.
 ## Instructions
 
 Numbered steps the agent follows.
-Reference scripts with: {{SKILLS_DIR}}/{name}/scripts/{script}.sh
 
 ## [Additional Sections as Needed]
 
 Keep concise. Agents have limited context.
 ```
 
+### Referencing Scripts
+
+If the skill has helper scripts, reference them using a path relative to the skill's install location. Use the resolved absolute path based on where the skill was created (global or local).
+
 ### Writing Guidelines
 
 - **Be concise.** Target <200 words for frequently-loaded skills, <500 words otherwise.
-- **Use `{{SKILLS_DIR}}`** for all script/file references. This token is replaced at install time with the resolved path (e.g., `~/.claude/skills` or `./.cursor/skills`).
 - **One good example > many mediocre ones.** Don't repeat patterns across languages.
 - **Flowcharts only for non-obvious decisions.** Use numbered lists for linear steps.
 - **No narrative storytelling.** Skills are references, not journals.
@@ -132,28 +140,17 @@ set -euo pipefail
 ```
 
 - Start with `set -euo pipefail`
-- Scripts can also use `{{SKILLS_DIR}}` to reference other files
 - Use embedded `python3` for complex data processing (JSON parsing, etc.)
 - Keep scripts self-contained — don't depend on external tools beyond standard unix + python3
-
-### Referencing Scripts from SKILL.md
-
-```markdown
-1. Run the script:
-   ```
-   bash {{SKILLS_DIR}}/{name}/scripts/{name}.sh $ARGUMENTS
-   ```
-```
 
 ## Step 5: Verify
 
 After generating the skill files:
 
 1. **Check frontmatter** — all required fields present, description starts with "Use when"
-2. **Check `{{SKILLS_DIR}}`** — used everywhere a path references the skill directory (never hardcode paths)
+2. **Check script references** — paths correctly resolve based on install location
 3. **Check structure** — SKILL.md exists, scripts/ has executable `.sh` files if needed
 4. **Read it back** — read the generated files and confirm they look correct
-5. **Tell the user** — remind them to run `install.sh` to deploy the skill to their target
 
 ## Quick Reference
 

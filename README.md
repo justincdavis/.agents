@@ -22,7 +22,7 @@ Lists and summarizes recent Claude sessions across all projects. Accepts a timef
 
 ### create-skill
 
-Guides through creating a new skill for Claude Code, Cursor, or .agents tooling. Brainstorms purpose and requirements with you, then generates the skill directory with proper frontmatter, `{{SKILLS_DIR}}` usage, and optional helper scripts.
+Guides through creating a new skill for Claude Code, Cursor, or .agents tooling. Brainstorms purpose and requirements with you, then generates the skill directory with proper frontmatter and optional helper scripts. Prompts for global or local install.
 
 ```
 /create-skill
