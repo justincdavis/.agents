@@ -219,6 +219,61 @@ except Exception:
 ' "$jsonl_file" 2>/dev/null || true
 }
 
+extract_cursor_meta() {
+    local txt_file="$1"
+    local project_dir="$2"
+    python3 -c '
+import sys, os, re
+from datetime import datetime, timezone
+
+txt_file = sys.argv[1]
+project_dir = sys.argv[2]
+
+try:
+    mtime = os.path.getmtime(txt_file)
+    mtime_iso = datetime.fromtimestamp(mtime, tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    with open(txt_file, "r", errors="replace") as f:
+        content = f.read()
+
+    # Count message turns
+    turns = len(re.findall(r"^(?:user|assistant):", content, re.MULTILINE))
+
+    # Skip trivial sessions
+    if turns <= 2:
+        sys.exit(0)
+
+    # Extract first user message content
+    first_prompt = ""
+    in_user = False
+    lines = content.split("\n")
+    for line in lines:
+        if line.startswith("user:"):
+            in_user = True
+            rest = line[5:].strip()
+            if rest and not rest.startswith("<"):
+                first_prompt = rest
+                break
+            continue
+        if in_user:
+            stripped = line.strip()
+            if stripped.startswith("<"):
+                continue
+            if stripped.startswith("assistant:"):
+                break
+            if stripped:
+                first_prompt = stripped
+                break
+
+    sid = os.path.basename(txt_file).replace(".txt", "")
+    first_prompt = first_prompt.replace("|", "-").replace("\n", " ")[:200]
+
+    print(f"SESSION|{sid}|{txt_file}||{first_prompt}||{mtime_iso}|{mtime_iso}|{turns}|{project_dir}|cursor-transcript")
+except Exception:
+    pass
+' "$txt_file" "$project_dir" 2>/dev/null || true
+}
+
 # --- find_unindexed ---
 
 find_unindexed() {
@@ -247,20 +302,35 @@ find_unindexed() {
     done < <(find "$project_dir" -maxdepth 1 -name '*.jsonl' -type f 2>/dev/null)
 }
 
-# --- Main ---
+# --- find_cursor_sessions ---
 
-main() {
-    parse_timeframe "${1:-24h}"
+find_cursor_sessions() {
+    local project_dir="$1"
+    local transcripts_dir="$project_dir/agent-transcripts"
 
-    section "Recent Claude Sessions"
-    echo "  Timeframe: ${1:-24h} (cutoff: $CUTOFF_ISO)"
+    [[ ! -d "$transcripts_dir" ]] && return
 
-    local projects_base="$HOME/.claude/projects"
+    while IFS= read -r txt_file; do
+        [[ -z "$txt_file" ]] && continue
 
-    if [[ ! -d "$projects_base" ]]; then
-        echo "  No projects directory found at $projects_base"
-        return
-    fi
+        # Pre-filter by mtime
+        local file_epoch
+        file_epoch=$(stat --format='%Y' "$txt_file" 2>/dev/null) || continue
+        if [[ "$file_epoch" -lt "$CUTOFF_EPOCH" ]]; then
+            continue
+        fi
+
+        extract_cursor_meta "$txt_file" "$project_dir"
+    done < <(find "$transcripts_dir" -maxdepth 1 -name '*.txt' -type f 2>/dev/null)
+}
+
+# --- Source scanning ---
+
+scan_claude_source() {
+    local projects_base="$1"
+    local source_label="$2"
+
+    [[ ! -d "$projects_base" ]] && return
 
     declare -A processed_dirs=()
 
@@ -296,7 +366,7 @@ main() {
         done < <(find_unindexed "$project_dir" "$indexed_ids")
 
         if [[ ${#sessions[@]} -gt 0 ]]; then
-            section "Project: $project_name"
+            section "Project: $project_name ($source_label)"
             for s in "${sessions[@]}"; do
                 format_session "$s"
             done
@@ -308,7 +378,6 @@ main() {
         [[ -z "$project_dir" ]] && continue
         [[ -v "processed_dirs[$project_dir]" ]] && continue
 
-        # Check if dir has any .jsonl files
         local has_jsonl
         has_jsonl=$(find "$project_dir" -maxdepth 1 -name '*.jsonl' -type f -print -quit 2>/dev/null)
         [[ -z "$has_jsonl" ]] && continue
@@ -326,12 +395,54 @@ main() {
         done < <(find_unindexed "$project_dir" "")
 
         if [[ ${#sessions[@]} -gt 0 ]]; then
-            section "Project: $project_name"
+            section "Project: $project_name ($source_label)"
             for s in "${sessions[@]}"; do
                 format_session "$s"
             done
         fi
     done < <(find "$projects_base" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+}
+
+scan_cursor_source() {
+    local projects_base="$1"
+
+    [[ ! -d "$projects_base" ]] && return
+
+    while IFS= read -r project_dir; do
+        [[ -z "$project_dir" ]] && continue
+
+        local project_name
+        project_name=$(basename "$project_dir")
+
+        local sessions=()
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            if [[ "$line" == SESSION\|* ]]; then
+                sessions+=("$line")
+            fi
+        done < <(find_cursor_sessions "$project_dir")
+
+        if [[ ${#sessions[@]} -gt 0 ]]; then
+            section "Project: $project_name (cursor)"
+            for s in "${sessions[@]}"; do
+                format_session "$s"
+            done
+        fi
+    done < <(find "$projects_base" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+}
+
+# --- Main ---
+
+main() {
+    parse_timeframe "${1:-24h}"
+
+    section "Recent AI Coding Sessions"
+    echo "  Timeframe: ${1:-24h} (cutoff: $CUTOFF_ISO)"
+
+    # Scan all sources
+    scan_claude_source "$HOME/.claude/projects" "claude"
+    scan_cursor_source "$HOME/.cursor/projects"
+    scan_claude_source "$HOME/.agents/projects" "agents"
 
     print_summary
 

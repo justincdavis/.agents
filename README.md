@@ -14,7 +14,7 @@ Gathers comprehensive environment information: system details, Python version, c
 
 ### list-plans
 
-Lists and summarizes recent Claude sessions across all projects. Accepts a timeframe argument. Read-only.
+Lists and summarizes recent AI coding sessions across all projects (Claude, Cursor, Agents). Accepts a timeframe argument. Read-only.
 
 ```
 /list-plans 3d

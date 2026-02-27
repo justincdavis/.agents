@@ -1,6 +1,6 @@
 ---
 name: list-plans
-description: List and summarize recent plans Claude has been working on across all projects
+description: List and summarize recent AI coding sessions across all projects (Claude, Cursor, Agents)
 disable-model-invocation: false
 user-invocable: true
 context: fork
@@ -9,9 +9,9 @@ allowed-tools: Bash
 argument-hint: "[timeframe: 1h, 6h, 24h, 3d, 1w] (default: 24h)"
 ---
 
-# List Recent Claude Plans
+# List Recent AI Coding Sessions
 
-List and summarize recent Claude sessions across all projects.
+List and summarize recent AI coding sessions across all projects. Scans Claude Code, Cursor, and Agents data directories.
 
 ## Instructions
 
