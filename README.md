@@ -20,6 +20,14 @@ Lists and summarizes recent Claude sessions across all projects. Accepts a timef
 /list-plans 3d
 ```
 
+### create-skill
+
+Guides through creating a new skill for Claude Code, Cursor, or .agents tooling. Brainstorms purpose and requirements with you, then generates the skill directory with proper frontmatter, `{{SKILLS_DIR}}` usage, and optional helper scripts.
+
+```
+/create-skill
+```
+
 ## Install
 
 ```bash
