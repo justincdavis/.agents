@@ -17,7 +17,7 @@ Gather and present environment information by category.
 
 1. Run the detection script:
    ```
-   bash {{SKILLS_DIR}}/read-env/scripts/read-env.sh $ARGUMENTS
+   bash ~/.agents/skills/read-env/scripts/read-env.sh $ARGUMENTS
    ```
 2. Present the output cleanly to the user, preserving the section structure.
 3. After the output, add a brief **Summary** section highlighting the most notable findings.

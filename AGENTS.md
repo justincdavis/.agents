@@ -9,14 +9,17 @@ A collection of reusable skills and plugin configurations for `.claude`, `.curso
 ## Key Commands
 
 ```bash
-# Install skills to a target
-./install.sh claude            # -> ~/.claude/skills/
-./install.sh cursor --local    # -> ./.cursor/skills/ (current directory)
+# Install skills
+./install.sh --skills claude            # -> ~/.claude/skills/
+./install.sh --skills cursor --local    # -> ./.cursor/skills/ (current directory)
 
 # Install third-party plugins
-./plugins.sh claude            # via Claude Code plugin marketplace
-./plugins.sh cursor agents     # symlink into both targets
-./plugins.sh agents --only superpowers  # single plugin only
+./install.sh --plugins claude            # via Claude Code plugin marketplace
+./install.sh --plugins cursor agents     # symlink into both targets
+./install.sh --plugins agents --only superpowers  # single plugin only
+
+# Install both
+./install.sh --all claude
 ```
 
 There are no build, lint, or test commands. The repo is pure bash scripts and markdown.
@@ -31,13 +34,13 @@ Skill frontmatter fields: `name`, `description`, `user-invocable`, `context`, `m
 
 ### Plugins (`config/plugins/`)
 
-Third-party plugins are defined as JSON configs. `plugins.sh` reads these, clones repos into `plugins/repos/` (gitignored), and either installs via Claude Code marketplace or symlinks into the target directory. The `enabled` field controls whether a plugin is installed by default or only when explicitly named with `--only`.
+Third-party plugins are defined as JSON configs. `install.sh --plugins` reads these, clones repos into `plugins/repos/` (gitignored), and either installs via Claude Code marketplace or symlinks into the target directory. The `enabled` field controls whether a plugin is installed by default or only when explicitly named with `--only`.
 
 ### Install flow
 
-`install.sh` stages skills to a temp directory, runs `sed` to replace `{{SKILLS_DIR}}` in all `.md` and `.sh` files, then copies into the destination. This staging avoids issues when source and destination overlap (e.g., installing to `~/.agents/skills/` from within `~/.agents/`).
+`install.sh` is a unified script with `--skills`, `--plugins`, and `--all` modes. Skills mode stages to a temp directory, runs `sed` to replace `{{SKILLS_DIR}}` in all `.md` and `.sh` files, then copies into the destination. This staging avoids issues when source and destination overlap (e.g., installing to `~/.agents/skills/` from within `~/.agents/`).
 
-`plugins.sh` requires `python3` (for JSON parsing) and `git`. For Claude target, it uses `claude plugin marketplace add` and `claude plugin install`. For cursor/agents targets, it shallow-clones repos and creates symlinks.
+Plugins mode requires `python3` (for JSON parsing) and `git`. For Claude target, it uses `claude plugin marketplace add` and `claude plugin install`. For cursor/agents targets, it shallow-clones repos and creates symlinks.
 
 ## Conventions
 

@@ -4,36 +4,21 @@ Collection of reusable skills and plugins for `.claude`, `.cursor`, and `.agents
 
 ## Install
 
-### Skills
-
 ```bash
-./install.sh <target> [--local]
-```
-
-**Targets:** `claude`, `cursor`, `agents`
-
-| Command | Installs to |
-|---|---|
-| `./install.sh claude` | `~/.claude/skills/` |
-| `./install.sh cursor` | `~/.cursor/skills/` |
-| `./install.sh agents` | `~/.agents/skills/` |
-| `./install.sh claude --local` | `./.claude/skills/` (current directory) |
-
-### Plugins
-
-```bash
-./plugins.sh <target> [target...] [--only <plugin>]
+./install.sh [--skills|--plugins|--all] <target> [target...] [options]
 ```
 
 **Targets:** `claude`, `cursor`, `agents`
 
 | Command | Effect |
 |---|---|
-| `./plugins.sh claude` | Install via Claude Code plugin marketplace |
-| `./plugins.sh cursor` | Symlink into `~/.cursor/plugins/` |
-| `./plugins.sh agents` | Symlink into `~/.agents/plugins/` |
-| `./plugins.sh cursor agents` | Both targets at once |
-| `./plugins.sh agents --only superpowers` | Install a specific plugin only |
+| `./install.sh --skills claude` | Skills to `~/.claude/skills/` |
+| `./install.sh --skills claude cursor` | Skills to both targets |
+| `./install.sh --skills claude --local` | Skills to `./.claude/skills/` (current directory) |
+| `./install.sh --plugins claude` | Plugins via Claude Code marketplace |
+| `./install.sh --plugins cursor agents` | Plugins to both targets |
+| `./install.sh --plugins agents --only superpowers` | Single plugin only |
+| `./install.sh --all claude` | Skills + plugins to claude |
 
 ## Skills
 
@@ -139,8 +124,8 @@ At install time, `install.sh` replaces `{{SKILLS_DIR}}` with the resolved skills
 
 | Install command | `{{SKILLS_DIR}}` becomes |
 |---|---|
-| `./install.sh claude` | `~/.claude/skills` |
-| `./install.sh cursor --local` | `./.cursor/skills` |
+| `./install.sh --skills claude` | `~/.claude/skills` |
+| `./install.sh --skills cursor --local` | `./.cursor/skills` |
 
 This applies to all `.md` and `.sh` files in the skill directory.
 

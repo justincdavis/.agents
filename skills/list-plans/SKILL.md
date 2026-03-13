@@ -17,7 +17,7 @@ List and summarize recent AI coding sessions across all projects. Scans Claude C
 
 1. Run the listing script with the user's timeframe argument:
    ```
-   bash {{SKILLS_DIR}}/list-plans/scripts/list-plans.sh $ARGUMENTS
+   bash ~/.agents/skills/list-plans/scripts/list-plans.sh $ARGUMENTS
    ```
    If `$ARGUMENTS` is empty, the script defaults to `24h`.
 
