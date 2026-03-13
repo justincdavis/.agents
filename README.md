@@ -1,34 +1,10 @@
 # .agents
 
-Collection of reusable skills for `.claude`, `.cursor`, and `.agents` tooling.
-
-## Skills
-
-### env-info
-
-Gathers comprehensive environment information: system details, Python version, compilers, runtimes, build tools, and package managers. Read-only.
-
-```
-/env-info
-```
-
-### list-plans
-
-Lists and summarizes recent AI coding sessions across all projects (Claude, Cursor, Agents). Accepts a timeframe argument. Read-only.
-
-```
-/list-plans 3d
-```
-
-### create-skill
-
-Guides through creating a new skill for Claude Code, Cursor, or .agents tooling. Brainstorms purpose and requirements with you, then generates the skill directory with proper frontmatter and optional helper scripts. Prompts for global or local install.
-
-```
-/create-skill
-```
+Collection of reusable skills and plugins for `.claude`, `.cursor`, and `.agents` tooling.
 
 ## Install
+
+### Skills
 
 ```bash
 ./install.sh <target> [--local]
@@ -43,9 +19,7 @@ Guides through creating a new skill for Claude Code, Cursor, or .agents tooling.
 | `./install.sh agents` | `~/.agents/skills/` |
 | `./install.sh claude --local` | `./.claude/skills/` (current directory) |
 
-## Plugins
-
-Third-party plugins are managed by `plugins.sh`, driven by JSON configs in `config/plugins/`.
+### Plugins
 
 ```bash
 ./plugins.sh <target> [target...] [--only <plugin>]
@@ -61,7 +35,116 @@ Third-party plugins are managed by `plugins.sh`, driven by JSON configs in `conf
 | `./plugins.sh cursor agents` | Both targets at once |
 | `./plugins.sh agents --only superpowers` | Install a specific plugin only |
 
-### Adding a new plugin
+## Skills
+
+<details>
+<summary><strong>read-env</strong> — Gather environment info by category</summary>
+
+Detects system details, compilers, Python, CUDA, runtimes, build tools, packages, containers, VCS, and dev tools. Run with specific modules or no arguments for everything.
+
+```
+/read-env                          # all modules
+/read-env system cuda              # just system + CUDA
+/read-env compilers python         # just compilers + Python
+```
+
+Modules: `system`, `compilers`, `python`, `cuda`, `runtimes`, `build-tools`, `packages`, `containers`, `vcs`, `dev-tools`
+</details>
+
+<details>
+<summary><strong>list-plans</strong> — List recent AI coding sessions</summary>
+
+Scans Claude Code, Cursor, and Agents data directories for recent plan files. Shows session summaries with project, branch, and timeframe info.
+
+```
+/list-plans          # last 24h (default)
+/list-plans 3d       # last 3 days
+/list-plans 1w       # last week
+```
+</details>
+
+<details>
+<summary><strong>create-skill</strong> — Create a new skill from scratch</summary>
+
+Interactive guide for creating new skills. Brainstorms purpose, name, invocation type, and tools needed, then generates the skill directory with proper frontmatter and optional helper scripts.
+
+```
+/create-skill
+```
+</details>
+
+<details>
+<summary><strong>create-skill-from-chat</strong> — Extract a skill from the current conversation</summary>
+
+Analyzes the current conversation to identify a repeatable process, then extracts it into a properly structured skill with supporting files (templates, scripts, references). Useful when you've just worked through something worth reusing.
+
+```
+/create-skill-from-chat
+```
+</details>
+
+<details>
+<summary><strong>make-data-viewer</strong> — Build an interactive data viewer</summary>
+
+Builds a single-file Flask + Plotly.js browser-based viewer for exploring datasets. Handles time-series, traces, scientific data with filtering, overlaying, and distance comparison. Starts from a bundled template and customizes for your data format.
+
+```
+/make-data-viewer
+```
+</details>
+
+## Plugins
+
+<details>
+<summary><strong>superpowers</strong> — Structured workflows for planning, debugging, TDD, and code review</summary>
+
+Adds skills for brainstorming, writing/executing plans, test-driven development, systematic debugging, code review, git worktrees, and parallel agent dispatch. Enforces disciplined development workflows.
+
+[obra/superpowers](https://github.com/obra/superpowers)
+</details>
+
+<details>
+<summary><strong>planning-with-files</strong> — Manus-style file-based planning</summary>
+
+Creates `task_plan.md`, `findings.md`, and `progress.md` for complex multi-step tasks. Supports session recovery after `/clear` and provides a `/status` command for at-a-glance progress.
+
+[OthmanAdi/planning-with-files](https://github.com/OthmanAdi/planning-with-files)
+</details>
+
+## Authoring
+
+### Adding a skill
+
+Skills are self-contained directories under `skills/`, each with a `SKILL.md` and optional `scripts/`.
+
+```
+skills/
+  my-skill/
+    SKILL.md              # Skill definition (uses {{SKILLS_DIR}})
+    scripts/
+      run.sh              # Helper scripts (can also use {{SKILLS_DIR}})
+      lib.sh
+```
+
+To reference helper scripts from `SKILL.md`, use the `{{SKILLS_DIR}}` placeholder instead of hardcoding a path:
+
+```markdown
+1. Run the script:
+   ```
+   bash {{SKILLS_DIR}}/my-skill/scripts/run.sh
+   ```
+```
+
+At install time, `install.sh` replaces `{{SKILLS_DIR}}` with the resolved skills directory based on the target and `--local` flag:
+
+| Install command | `{{SKILLS_DIR}}` becomes |
+|---|---|
+| `./install.sh claude` | `~/.claude/skills` |
+| `./install.sh cursor --local` | `./.cursor/skills` |
+
+This applies to all `.md` and `.sh` files in the skill directory.
+
+### Adding a plugin
 
 Create a JSON file in `config/plugins/`:
 
@@ -90,34 +173,3 @@ Create a JSON file in `config/plugins/`:
 - `enabled`: set to `false` to skip unless explicitly named with `--only`
 - `targets`: omit a key if the plugin doesn't support that target
 - `path`: subdirectory within the cloned repo to symlink (`.` for root)
-
-## Authoring skills with `{{SKILLS_DIR}}`
-
-Skills often bundle helper scripts alongside the `SKILL.md`. To reference these scripts, use the `{{SKILLS_DIR}}` placeholder instead of hardcoding a path:
-
-```markdown
-1. Run the script:
-   ```
-   bash {{SKILLS_DIR}}/my-skill/scripts/run.sh
-   ```
-```
-
-At install time, `install.sh` replaces `{{SKILLS_DIR}}` with the resolved skills directory based on the target and `--local` flag. For example:
-
-| Install command | `{{SKILLS_DIR}}` becomes |
-|---|---|
-| `./install.sh claude` | `~/.claude/skills` |
-| `./install.sh cursor --local` | `./.cursor/skills` |
-
-This applies to all `.md` and `.sh` files in the skill directory, so you can use `{{SKILLS_DIR}}` in helper scripts too.
-
-### Skill directory structure
-
-```
-skills/
-  my-skill/
-    SKILL.md              # Skill definition (uses {{SKILLS_DIR}})
-    scripts/
-      run.sh              # Helper scripts (can also use {{SKILLS_DIR}})
-      lib.sh
-```
