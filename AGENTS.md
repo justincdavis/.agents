@@ -4,7 +4,7 @@ This file provides guidance to AI agents when working with code in this reposito
 
 ## What This Repo Is
 
-A collection of reusable skills and plugin configurations for `.claude`, `.cursor`, and `.agents` tooling. It provides two mechanisms for extending AI coding assistants: **skills** (first-party, in `skills/`) and **plugins** (third-party, managed via `config/plugins/`).
+A collection of reusable skills and plugin configurations for `.claude`, `.cursor`, and `.agents` tooling. It provides two mechanisms for extending AI coding assistants: **skills** (first-party, in `skills/`) and **plugins** (third-party, managed via `configs/plugins/`).
 
 ## Key Commands
 
@@ -32,7 +32,7 @@ Each skill is a directory containing a `SKILL.md` (frontmatter + instructions) a
 
 Skill frontmatter fields: `name`, `description`, `user-invocable`, `context`, `model`, `allowed-tools`, `argument-hint`.
 
-### Plugins (`config/plugins/`)
+### Plugins (`configs/plugins/`)
 
 Third-party plugins are defined as JSON configs. `install.sh --plugins` reads these, clones repos into `plugins/repos/` (gitignored), and either installs via Claude Code marketplace or symlinks into the target directory. The `enabled` field controls whether a plugin is installed by default or only when explicitly named with `--only`.
 
@@ -46,5 +46,5 @@ Plugins mode requires `python3` (for JSON parsing) and `git`. For Claude target,
 
 - Skills are self-contained directories under `skills/` -- each must have a `SKILL.md`.
 - Helper scripts go in `scripts/` within the skill directory, and can also use `{{SKILLS_DIR}}`.
-- Plugin configs go in `config/plugins/` as individual JSON files.
+- Plugin configs go in `configs/plugins/` as individual JSON files.
 - The `plugins/` directory (where repos are cloned) is gitignored.

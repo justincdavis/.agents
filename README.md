@@ -131,7 +131,7 @@ This applies to all `.md` and `.sh` files in the skill directory.
 
 ### Adding a plugin
 
-Create a JSON file in `config/plugins/`:
+Create a JSON file in `configs/plugins/`:
 
 ```json
 {

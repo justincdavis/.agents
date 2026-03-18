@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_SRC="$SCRIPT_DIR/skills"
-CONFIG_DIR="$SCRIPT_DIR/config/plugins"
+CONFIG_DIR="$SCRIPT_DIR/configs/plugins"
 REPOS_DIR="$SCRIPT_DIR/plugins/repos"
 
 # --- Usage ---
@@ -14,7 +14,7 @@ Usage: install.sh [--skills|--plugins|--all] <target> [target...] [options]
 
 Modes (required, pick one):
   --skills    Install first-party skills from skills/
-  --plugins   Install third-party plugins from config/plugins/
+  --plugins   Install third-party plugins from configs/plugins/
   --all       Install both skills and plugins
 
 Targets:

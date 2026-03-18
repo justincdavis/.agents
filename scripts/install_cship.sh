@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 INSTALL_DIR="${HOME}/.local/bin"
 CSHIP_CONFIG="${HOME}/.config/cship.toml"
 SETTINGS="${HOME}/.claude/settings.json"
@@ -44,62 +46,20 @@ if [ ! -s "${INSTALL_DIR}/cship" ]; then
 fi
 echo "cship: installed to ${INSTALL_DIR}/cship"
 
-# ── 3. Write cship.toml (Starship-aware) ─────────────────────────────────────
+# ── 3. Symlink cship.toml (Starship-aware) ───────────────────────────────────
 mkdir -p "$(dirname "$CSHIP_CONFIG")"
 
 if command -v starship >/dev/null 2>&1; then
-  echo "cship: starship found — enabling full starship prompt passthrough"
-  LINES_VALUE='lines = [
-  "$starship_prompt",
-  "$cship.model $cship.cost $cship.context_bar $cship.usage_limits"
-]'
+  echo "cship: starship found — using starship config variant"
+  SOURCE_CONFIG="${REPO_DIR}/configs/cship-starship.toml"
 else
-  echo "cship: starship not found — using Claude metrics only"
+  echo "cship: starship not found — using basic config variant"
   echo "cship: install starship (https://starship.rs) and re-run to enable full prompt"
-  LINES_VALUE='lines = [
-  "$cship.model $cship.cost $cship.context_bar $cship.usage_limits"
-]'
+  SOURCE_CONFIG="${REPO_DIR}/configs/cship.toml"
 fi
 
-cat > "$CSHIP_CONFIG" <<EOF
-# cship — Claude Code statusline
-# Full config reference: https://cship.dev
-[cship]
-${LINES_VALUE}
-
-[cship.model]
-symbol = " "
-style  = "bold cyan"
-
-[cship.context_bar]
-symbol             = " "
-format             = "[\$symbol\$value](\$style)"
-width              = 10
-style              = "fg:#7dcfff"
-warn_threshold     = 40.0
-warn_style         = "fg:#e0af68"
-critical_threshold = 70.0
-critical_style     = "bold fg:#f7768e"
-
-[cship.cost]
-symbol             = "💰 "
-style              = "fg:#a9b1d6"
-warn_threshold     = 2.0
-warn_style         = "fg:#e0af68"
-critical_threshold = 5.0
-critical_style     = "bold fg:#f7768e"
-
-[cship.usage_limits]
-five_hour_format   = " 5h {pct}% ({reset})"
-seven_day_format   = " 7d {pct}% ({reset})"
-separator          = " "
-warn_threshold     = 60.0
-warn_style         = "fg:#e0af68"
-critical_threshold = 80.0
-critical_style     = "bold fg:#f7768e"
-EOF
-
-echo "cship: wrote config to $CSHIP_CONFIG"
+ln -sf "$SOURCE_CONFIG" "$CSHIP_CONFIG"
+echo "cship: symlinked $CSHIP_CONFIG -> $SOURCE_CONFIG"
 
 # ── 4. Wire statusLine in settings.json ───────────────────────────────────────
 if ! command -v python3 >/dev/null 2>&1; then
