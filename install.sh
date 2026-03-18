@@ -339,3 +339,14 @@ fi
 if [[ "$MODE" == "plugins" || "$MODE" == "all" ]]; then
     install_plugins
 fi
+
+# --- Install cship statusline (Claude only) ---
+
+for target in "${TARGETS[@]}"; do
+    if [[ "$target" == "claude" ]]; then
+        echo ""
+        echo "Installing cship statusline..."
+        bash "$SCRIPT_DIR/scripts/install_cship.sh"
+        break
+    fi
+done
