@@ -11,11 +11,12 @@ REPOS_DIR="$SCRIPT_DIR/plugins/repos"
 usage() {
     cat <<EOF
 Usage: install.sh [--skills|--plugins|--all] <target> [target...] [options]
+       install.sh --statusline [claude]
 
-Modes (required, pick one):
+Modes (pick one):
   --skills    Install first-party skills from skills/
   --plugins   Install third-party plugins from configs/plugins/
-  --all       Install both skills and plugins
+  --all       Install both skills, plugins, and statusline (claude)
 
 Targets:
   claude      ~/.claude/{skills,plugins}/
@@ -25,6 +26,7 @@ Targets:
 Options:
   --local         Install skills to ./<target>/skills/ instead of home directory
   --only <name>   Install only the named plugin (plugins only)
+  --statusline    Install cship statusline (claude only, can be standalone)
   -h, --help      Show this help
 
 Examples:
@@ -34,7 +36,9 @@ Examples:
   install.sh --plugins claude             # plugins via Claude Code marketplace
   install.sh --plugins cursor agents      # plugins -> both targets
   install.sh --plugins agents --only superpowers
-  install.sh --all claude                 # skills + plugins -> claude
+  install.sh --all claude                 # skills + plugins + statusline -> claude
+  install.sh --statusline                 # statusline only -> claude
+  install.sh --skills claude --statusline # skills + statusline -> claude
 EOF
     exit 1
 }
@@ -45,6 +49,7 @@ MODE=""
 TARGETS=()
 LOCAL=false
 ONLY=""
+STATUSLINE=false
 
 [[ $# -eq 0 ]] && usage
 
@@ -55,6 +60,7 @@ while [[ $# -gt 0 ]]; do
         --all)     MODE="all" ;;
         claude|cursor|agents) TARGETS+=("$1") ;;
         --local)   LOCAL=true ;;
+        --statusline) STATUSLINE=true ;;
         --only)
             [[ $# -lt 2 ]] && { echo "ERROR: --only requires a plugin name"; usage; }
             ONLY="$2"; shift ;;
@@ -66,7 +72,13 @@ done
 
 # --- Validate ---
 
-[[ -z "$MODE" ]] && { echo "ERROR: No mode specified (use --skills, --plugins, or --all)."; usage; }
+# --statusline can run standalone (no mode required), default target to claude
+if [[ -z "$MODE" ]] && $STATUSLINE; then
+    [[ ${#TARGETS[@]} -eq 0 ]] && TARGETS+=("claude")
+elif [[ -z "$MODE" ]]; then
+    echo "ERROR: No mode specified (use --skills, --plugins, or --all)."; usage
+fi
+
 [[ ${#TARGETS[@]} -eq 0 ]] && { echo "ERROR: No target specified."; usage; }
 
 if [[ "$MODE" == "plugins" ]] && $LOCAL; then
@@ -75,6 +87,24 @@ fi
 
 if [[ "$MODE" == "skills" ]] && [[ -n "$ONLY" ]]; then
     echo "WARNING: --only is ignored for skills"
+fi
+
+# --all with claude target implies --statusline
+if [[ "$MODE" == "all" ]]; then
+    for t in "${TARGETS[@]}"; do
+        [[ "$t" == "claude" ]] && STATUSLINE=true
+    done
+fi
+
+if $STATUSLINE; then
+    has_claude=false
+    for t in "${TARGETS[@]}"; do
+        [[ "$t" == "claude" ]] && has_claude=true
+    done
+    if ! $has_claude; then
+        echo "WARNING: --statusline only applies to the claude target, ignoring"
+        STATUSLINE=false
+    fi
 fi
 
 # =============================================================================
@@ -340,13 +370,10 @@ if [[ "$MODE" == "plugins" || "$MODE" == "all" ]]; then
     install_plugins
 fi
 
-# --- Install cship statusline (Claude only) ---
+# --- Install cship statusline (Claude only, requires --statusline) ---
 
-for target in "${TARGETS[@]}"; do
-    if [[ "$target" == "claude" ]]; then
-        echo ""
-        echo "Installing cship statusline..."
-        bash "$SCRIPT_DIR/scripts/install_cship.sh"
-        break
-    fi
-done
+if $STATUSLINE; then
+    echo ""
+    echo "Installing cship statusline..."
+    bash "$SCRIPT_DIR/scripts/install_cship.sh"
+fi
