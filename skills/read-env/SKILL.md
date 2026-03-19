@@ -1,5 +1,5 @@
 ---
-name: read-env
+name: jcd:read-env
 description: Gather environment information by category. Run with arguments (e.g., system, cuda, python, compilers) to get specific info, or with no arguments for everything.
 disable-model-invocation: false
 user-invocable: true

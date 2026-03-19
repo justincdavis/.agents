@@ -1,5 +1,5 @@
 ---
-name: create-skill-from-chat
+name: jcd:create-skill-from-chat
 description: Use when the current conversation contains a repeatable process worth extracting into a reusable skill — the user says something like "make a skill from this", "extract this into a skill", "turn this chat into a skill", or "save this process"
 disable-model-invocation: false
 user-invocable: true

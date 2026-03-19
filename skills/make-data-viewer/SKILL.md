@@ -1,5 +1,5 @@
 ---
-name: make-data-viewer
+name: jcd:make-data-viewer
 description: Use when the user wants to build an interactive browser-based data viewer, comparison tool, or dashboard for exploring datasets — especially time-series, trace, or scientific data that needs filtering, overlaying, or distance comparison
 disable-model-invocation: false
 user-invocable: true

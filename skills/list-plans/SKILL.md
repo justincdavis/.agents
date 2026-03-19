@@ -1,5 +1,5 @@
 ---
-name: list-plans
+name: jcd:list-plans
 description: List and summarize recent AI coding sessions across all projects (Claude, Cursor, Agents)
 disable-model-invocation: false
 user-invocable: true

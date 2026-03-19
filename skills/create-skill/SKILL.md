@@ -1,5 +1,5 @@
 ---
-name: create-skill
+name: jcd:create-skill
 description: Use when creating a new skill for Claude Code, Cursor, or .agents tooling - guides through brainstorming purpose, writing frontmatter, setting up directory structure, and choosing install location
 disable-model-invocation: false
 user-invocable: true
