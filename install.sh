@@ -22,6 +22,8 @@ Targets:
   claude      ~/.claude/{skills,plugins}/
   cursor      ~/.cursor/{skills,plugins}/
   agents      ~/.agents/{skills,plugins}/
+  codex       Codex plugins via ~/.agents/plugins/marketplace.json
+              (Codex skills use the agents target: ~/.agents/skills/)
 
 Options:
   --local         Install skills to ./<target>/skills/ instead of home directory
@@ -36,6 +38,7 @@ Examples:
   install.sh --plugins claude             # plugins via Claude Code marketplace
   install.sh --plugins cursor agents      # plugins -> both targets
   install.sh --plugins agents --only superpowers
+  install.sh --plugins codex --only superpowers
   install.sh --all claude                 # skills + plugins + statusline -> claude
   install.sh --statusline                 # statusline only -> claude
   install.sh --skills claude --statusline # skills + statusline -> claude
@@ -58,7 +61,7 @@ while [[ $# -gt 0 ]]; do
         --skills)  MODE="skills" ;;
         --plugins) MODE="plugins" ;;
         --all)     MODE="all" ;;
-        claude|cursor|agents) TARGETS+=("$1") ;;
+        claude|cursor|agents|codex) TARGETS+=("$1") ;;
         --local)   LOCAL=true ;;
         --statusline) STATUSLINE=true ;;
         --only)
@@ -87,6 +90,16 @@ fi
 
 if [[ "$MODE" == "skills" ]] && [[ -n "$ONLY" ]]; then
     echo "WARNING: --only is ignored for skills"
+fi
+
+if [[ "$MODE" == "skills" || "$MODE" == "all" ]]; then
+    for t in "${TARGETS[@]}"; do
+        if [[ "$t" == "codex" ]]; then
+            echo "ERROR: Codex reads user skills from ~/.agents/skills; use target 'agents' for skills."
+            echo "       Use target 'codex' only with --plugins."
+            exit 1
+        fi
+    done
 fi
 
 # --all with claude target implies --statusline
@@ -171,7 +184,7 @@ print(c.get("repo", ""))
 print("true" if c.get("enabled", True) else "false")
 
 targets = c.get("targets", {})
-for t in ("claude", "cursor", "agents"):
+for t in ("claude", "cursor", "agents", "codex"):
     tc = targets.get(t)
     if tc is None:
         print(f"{t}||")
@@ -182,7 +195,13 @@ for t in ("claude", "cursor", "agents"):
     else:
         ty = tc.get("type", "symlink")
         pa = tc.get("path", ".")
-        print(f"{t}|{ty}|{pa}")
+        if t == "codex":
+            category = tc.get("category", "Productivity")
+            install_policy = tc.get("install_policy", "AVAILABLE")
+            auth_policy = tc.get("auth_policy", "ON_INSTALL")
+            print(f"{t}|{ty}|{pa}|{category}|{install_policy}|{auth_policy}")
+        else:
+            print(f"{t}|{ty}|{pa}")
 PYEOF
 }
 
@@ -218,8 +237,14 @@ ensure_symlink() {
     if [[ -L "$link" ]]; then
         rm "$link"
     elif [[ -e "$link" ]]; then
-        echo "  Backing up: ${link} -> ${link}.bak"
-        mv "$link" "${link}.bak"
+        local backup="${link}.bak"
+        local i=1
+        while [[ -e "$backup" || -L "$backup" ]]; do
+            backup="${link}.bak.${i}"
+            ((i++))
+        done
+        echo "  Backing up: ${link} -> ${backup}"
+        mv "$link" "$backup"
     fi
 
     ln -s "$target" "$link"
@@ -277,6 +302,147 @@ install_symlink_plugin() {
     echo "  Installed: ${name} -> ${link} (${target_name})"
 }
 
+update_codex_marketplace() {
+    local name="$1"
+    local category="$2"
+    local install_policy="$3"
+    local auth_policy="$4"
+    local marketplace="$HOME/.agents/plugins/marketplace.json"
+
+    python3 - "$marketplace" "$name" "$category" "$install_policy" "$auth_policy" <<'PYEOF'
+import json
+import sys
+from pathlib import Path
+
+marketplace = Path(sys.argv[1]).expanduser()
+name = sys.argv[2]
+category = sys.argv[3]
+install_policy = sys.argv[4]
+auth_policy = sys.argv[5]
+
+valid_install = {"NOT_AVAILABLE", "AVAILABLE", "INSTALLED_BY_DEFAULT"}
+valid_auth = {"ON_INSTALL", "ON_USE"}
+if install_policy not in valid_install:
+    raise SystemExit(f"Invalid Codex install policy: {install_policy}")
+if auth_policy not in valid_auth:
+    raise SystemExit(f"Invalid Codex auth policy: {auth_policy}")
+
+if marketplace.exists():
+    with marketplace.open() as handle:
+        payload = json.load(handle)
+else:
+    payload = {
+        "name": "personal",
+        "interface": {
+            "displayName": "Personal"
+        },
+        "plugins": []
+    }
+
+if not isinstance(payload, dict):
+    raise SystemExit(f"{marketplace} must contain a JSON object")
+
+plugins = payload.setdefault("plugins", [])
+if not isinstance(plugins, list):
+    raise SystemExit(f"{marketplace} field 'plugins' must be an array")
+
+entry = {
+    "name": name,
+    "source": {
+        "source": "local",
+        "path": f"./plugins/{name}"
+    },
+    "policy": {
+        "installation": install_policy,
+        "authentication": auth_policy
+    },
+    "category": category
+}
+
+for index, existing in enumerate(plugins):
+    if isinstance(existing, dict) and existing.get("name") == name:
+        plugins[index] = entry
+        break
+else:
+    plugins.append(entry)
+
+marketplace.parent.mkdir(parents=True, exist_ok=True)
+with marketplace.open("w") as handle:
+    json.dump(payload, handle, indent=2)
+    handle.write("\n")
+
+marketplace_name = payload.get("name")
+if not isinstance(marketplace_name, str) or not marketplace_name.strip():
+    raise SystemExit(f"{marketplace} field 'name' must be a non-empty string")
+print(marketplace_name)
+PYEOF
+}
+
+read_codex_plugin_name() {
+    local manifest="$1"
+    python3 - "$manifest" <<'PYEOF'
+import json
+import sys
+
+with open(sys.argv[1]) as handle:
+    payload = json.load(handle)
+
+name = payload.get("name")
+if not isinstance(name, str) or not name.strip():
+    raise SystemExit("Codex plugin manifest must contain a non-empty name")
+print(name)
+PYEOF
+}
+
+install_codex_plugin() {
+    local name="$1"
+    local repo="$2"
+    local subpath="$3"
+    local category="$4"
+    local install_policy="$5"
+    local auth_policy="$6"
+
+    clone_repo "$repo" "$name"
+
+    local src="${REPOS_DIR}/${name}"
+    if [[ "$subpath" != "." && -n "$subpath" ]]; then
+        src="${src}/${subpath}"
+    fi
+
+    local manifest="${src}/.codex-plugin/plugin.json"
+    if [[ ! -f "$manifest" ]]; then
+        echo "  ERROR: ${name} does not contain .codex-plugin/plugin.json, skipping codex"
+        return 1
+    fi
+
+    local manifest_name
+    manifest_name="$(read_codex_plugin_name "$manifest")"
+    if [[ "$manifest_name" != "$name" ]]; then
+        echo "  ERROR: Codex plugin manifest name '${manifest_name}' does not match '${name}'"
+        return 1
+    fi
+
+    local link="$HOME/plugins/${name}"
+    ensure_symlink "$src" "$link"
+
+    local marketplace_name
+    marketplace_name="$(update_codex_marketplace "$name" "$category" "$install_policy" "$auth_policy")"
+    echo "  Codex marketplace entry: ${name}@${marketplace_name}"
+
+    if ! command -v codex &>/dev/null; then
+        echo "  ERROR: codex CLI not found; marketplace entry was created but plugin was not installed"
+        return 1
+    fi
+
+    echo "  Installing: ${name}@${marketplace_name} (codex)"
+    codex plugin add "${name}@${marketplace_name}" 2>&1 || {
+        echo "  ERROR: codex plugin add failed; marketplace entry remains at $HOME/.agents/plugins/marketplace.json"
+        return 1
+    }
+
+    echo "  Installed: ${name} (codex)"
+}
+
 # --- Process a single plugin config ---
 
 process_plugin() {
@@ -308,14 +474,16 @@ process_plugin() {
         local line
         line=$(echo "$output" | grep "^${target}|") || continue
 
-        local type field3 field4
-        IFS='|' read -r _ type field3 field4 <<< "$line"
+        local type field3 field4 field5 field6
+        IFS='|' read -r _ type field3 field4 field5 field6 <<< "$line"
 
         # Skip if target not configured for this plugin
         [[ -z "$type" ]] && continue
 
         if [[ "$target" == "claude" && "$type" == "marketplace" ]]; then
             install_claude_plugin "$name" "$field3" "$field4"
+        elif [[ "$target" == "codex" && "$type" == "marketplace" ]]; then
+            install_codex_plugin "$name" "$repo" "$field3" "$field4" "$field5" "$field6"
         elif [[ "$type" == "symlink" ]]; then
             install_symlink_plugin "$name" "$repo" "$field3" "$target"
         fi

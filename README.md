@@ -1,6 +1,6 @@
 # .agents
 
-Collection of reusable skills and plugins for `.claude`, `.cursor`, and `.agents` tooling.
+Collection of reusable skills and plugins for `.claude`, `.cursor`, `.agents`, and Codex tooling.
 
 ## Install
 
@@ -8,7 +8,7 @@ Collection of reusable skills and plugins for `.claude`, `.cursor`, and `.agents
 ./install.sh [--skills|--plugins|--all] <target> [target...] [options]
 ```
 
-**Targets:** `claude`, `cursor`, `agents`
+**Targets:** `claude`, `cursor`, `agents`, `codex`
 
 | Command | Effect |
 |---|---|
@@ -18,7 +18,10 @@ Collection of reusable skills and plugins for `.claude`, `.cursor`, and `.agents
 | `./install.sh --plugins claude` | Plugins via Claude Code marketplace |
 | `./install.sh --plugins cursor agents` | Plugins to both targets |
 | `./install.sh --plugins agents --only superpowers` | Single plugin only |
+| `./install.sh --plugins codex --only superpowers` | Superpowers to Codex via the personal marketplace |
 | `./install.sh --all claude` | Skills + plugins to claude |
+
+Codex reads user skills from `~/.agents/skills`, so use the `agents` target for skills intended for Codex. The `codex` target is for Codex plugins; it creates or updates `~/.agents/plugins/marketplace.json`, links plugin sources under `~/plugins/`, and installs the plugin with the Codex CLI when available.
 
 ## Skills
 
@@ -150,6 +153,13 @@ Create a JSON file in `configs/plugins/`:
     "agents": {
       "type": "symlink",
       "path": "."
+    },
+    "codex": {
+      "type": "marketplace",
+      "path": ".",
+      "category": "Coding",
+      "install_policy": "AVAILABLE",
+      "auth_policy": "ON_INSTALL"
     }
   }
 }
@@ -158,3 +168,4 @@ Create a JSON file in `configs/plugins/`:
 - `enabled`: set to `false` to skip unless explicitly named with `--only`
 - `targets`: omit a key if the plugin doesn't support that target
 - `path`: subdirectory within the cloned repo to symlink (`.` for root)
+- `codex`: uses a local Codex marketplace entry; the plugin repo must contain `.codex-plugin/plugin.json`

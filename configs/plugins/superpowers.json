@@ -14,6 +14,13 @@
     "agents": {
       "type": "symlink",
       "path": "."
+    },
+    "codex": {
+      "type": "marketplace",
+      "path": ".",
+      "category": "Coding",
+      "install_policy": "AVAILABLE",
+      "auth_policy": "ON_INSTALL"
     }
   }
 }
