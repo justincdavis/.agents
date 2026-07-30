@@ -16,13 +16,14 @@ Collection of reusable skills and plugins for `.claude`, `.cursor`, `.agents`, a
 | `./install.sh --skills claude cursor` | Skills to both targets |
 | `./install.sh --skills claude --local` | Skills to `./.claude/skills/` (current directory) |
 | `./install.sh --agents claude` | Subagents to `~/.claude/agents/` |
+| `./install.sh --agents claude agents` | Subagents to both targets |
 | `./install.sh --plugins claude` | Plugins via Claude Code marketplace |
 | `./install.sh --plugins cursor agents` | Plugins to both targets |
 | `./install.sh --plugins agents --only superpowers` | Single plugin only |
 | `./install.sh --plugins codex --only superpowers` | Superpowers to Codex via the personal marketplace |
 | `./install.sh --all claude` | Skills + agents + plugins to claude |
 
-`--agents` only supports the `claude` target — custom subagents invoked via the `Task` tool are a Claude Code-specific mechanism.
+`--agents` only supports the `claude` and `agents` targets — `cursor` has no custom-subagent mechanism, and Codex uses a different agent format.
 
 Codex reads user skills from `~/.agents/skills`, so use the `agents` target for skills intended for Codex. The `codex` target is for Codex plugins; it creates or updates `~/.agents/plugins/marketplace.json`, links plugin sources under `~/plugins/`, and installs the plugin with the Codex CLI when available.
 

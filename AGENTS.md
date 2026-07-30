@@ -13,7 +13,7 @@ A collection of reusable skills and plugin configurations for `.claude`, `.curso
 ./install.sh --skills claude            # -> ~/.claude/skills/
 ./install.sh --skills cursor --local    # -> ./.cursor/skills/ (current directory)
 
-# Install first-party subagents (claude target only)
+# Install first-party subagents (claude, agents targets only)
 ./install.sh --agents claude            # -> ~/.claude/agents/
 
 # Install third-party plugins
@@ -21,7 +21,7 @@ A collection of reusable skills and plugin configurations for `.claude`, `.curso
 ./install.sh --plugins cursor agents     # symlink into both targets
 ./install.sh --plugins agents --only superpowers  # single plugin only
 
-# Install everything (skills + agents (claude only) + plugins)
+# Install everything (skills + agents (claude/agents targets) + plugins)
 ./install.sh --all claude
 ```
 
@@ -37,7 +37,7 @@ Skill frontmatter fields: `name`, `description`, `user-invocable`, `context`, `m
 
 ### Agents (`agents/`)
 
-Custom Claude Code subagents (dispatched via the `Task` tool, not slash commands). Each is a single Markdown file with `name`/`description`/`model` frontmatter and a system-prompt body -- unlike skills, agents are not namespaced into per-agent directories, so shared resource files (e.g. reference modules an agent `Read`s at runtime) sit alongside the agent file directly under `agents/`. Agents use `{{AGENTS_DIR}}` as their install-path placeholder, replaced the same way `{{SKILLS_DIR}}` is for skills. `install.sh --agents` only supports the `claude` target, since custom subagents are a Claude Code-specific mechanism.
+Custom Claude Code subagents (dispatched via the `Task` tool, not slash commands). Each is a single Markdown file with `name`/`description`/`model` frontmatter and a system-prompt body -- unlike skills, agents are not namespaced into per-agent directories, so shared resource files (e.g. reference modules an agent `Read`s at runtime) sit alongside the agent file directly under `agents/`. Agents use `{{AGENTS_DIR}}` as their install-path placeholder, replaced the same way `{{SKILLS_DIR}}` is for skills. `install.sh --agents` only supports the `claude` and `agents` targets -- `cursor` has no custom-subagent mechanism, and Codex uses a different agent format (`agents-codex/` in the upstream source, not mirrored here).
 
 ### Plugins (`configs/plugins/`)
 

@@ -16,14 +16,14 @@ Usage: install.sh [--skills|--agents|--plugins|--all] <target> [target...] [opti
 
 Modes (pick one):
   --skills    Install first-party skills from skills/
-  --agents    Install first-party subagents from agents/ (claude target only)
+  --agents    Install first-party subagents from agents/ (claude, agents targets only)
   --plugins   Install third-party plugins from configs/plugins/
-  --all       Install skills, agents (claude only), plugins, and statusline (claude)
+  --all       Install skills, agents (claude/agents targets only), plugins, and statusline (claude)
 
 Targets:
   claude      ~/.claude/{skills,agents,plugins}/
   cursor      ~/.cursor/{skills,plugins}/
-  agents      ~/.agents/{skills,plugins}/
+  agents      ~/.agents/{skills,agents,plugins}/
   codex       Codex plugins via ~/.agents/plugins/marketplace.json
               (Codex skills use the agents target: ~/.agents/skills/)
 
@@ -38,6 +38,7 @@ Examples:
   install.sh --skills claude cursor       # skills -> both targets
   install.sh --skills claude --local      # skills -> ./.claude/skills/
   install.sh --agents claude              # subagents -> ~/.claude/agents/
+  install.sh --agents claude agents       # subagents -> both targets
   install.sh --plugins claude             # plugins via Claude Code marketplace
   install.sh --plugins cursor agents      # plugins -> both targets
   install.sh --plugins agents --only superpowers
@@ -108,8 +109,8 @@ fi
 
 if [[ "$MODE" == "agents" ]]; then
     for t in "${TARGETS[@]}"; do
-        if [[ "$t" != "claude" ]]; then
-            echo "ERROR: Custom subagents (Task tool) are a Claude Code-specific mechanism; --agents only supports target 'claude'."
+        if [[ "$t" != "claude" && "$t" != "agents" ]]; then
+            echo "ERROR: --agents only supports targets 'claude' and 'agents' (cursor has no custom-subagent mechanism; codex uses a different agent format)."
             exit 1
         fi
     done
@@ -596,10 +597,10 @@ if [[ "$MODE" == "agents" ]]; then
     done
 fi
 
-# --all only installs agents for the claude target (Task subagents are Claude Code-specific)
+# --all only installs agents for the claude/agents targets (cursor has no custom-subagent mechanism)
 if [[ "$MODE" == "all" ]]; then
     for target in "${TARGETS[@]}"; do
-        [[ "$target" == "claude" ]] && install_agents_to_target "$target"
+        [[ "$target" == "claude" || "$target" == "agents" ]] && install_agents_to_target "$target"
     done
 fi
 
