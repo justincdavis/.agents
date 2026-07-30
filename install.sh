@@ -208,8 +208,9 @@ install_agents_to_target() {
     cp -r "$AGENTS_SRC"/* "$staging"/
 
     # Replace {{AGENTS_DIR}} in staged files
-    find "$staging" -type f -name '*.md' \
+    find "$staging" -type f \( -name '*.md' -o -name '*.sh' -o -name '*.py' \) \
         -exec sed -i "s|{{AGENTS_DIR}}|$agents_path|g" {} +
+    find "$staging" -type f \( -name '*.sh' -o -name '*.py' \) -exec chmod +x {} +
 
     mkdir -p "$dest_agents"
     cp -r "$staging"/* "$dest_agents"/

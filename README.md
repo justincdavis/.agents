@@ -108,7 +108,36 @@ Custom Claude Code subagents (invoked via `Task`, not slash commands) live under
 <details>
 <summary><strong>web-search-agent</strong> — Multi-source internet research specialist</summary>
 
-Loads topic-specific search strategy modules (GitHub/debugging, academic papers, Stack Overflow, general web, Chinese tech communities) before searching, for more targeted queries. Used internally by the `research` skill family above, but can also be dispatched directly via `Task`.
+Loads topic-specific search strategy modules (GitHub/debugging, academic papers, Stack Overflow, general web, Chinese tech communities) before searching, for more targeted queries. Used internally by the `research` skill family above, but can also be dispatched directly via `Task`. The academic module includes helper scripts that query the arXiv, Semantic Scholar, and OpenAlex APIs directly instead of scraping search results.
+
+**API credentials (all optional):**
+
+| API | Credential | Without it |
+|---|---|---|
+| arXiv | none needed | — |
+| Semantic Scholar | free API key from [semanticscholar.org/product/api](https://www.semanticscholar.org/product/api) | works keyless but heavily rate-limited (frequent 429s) |
+| OpenAlex | just your email (no signup) | works, but misses the faster "polite pool" |
+
+Each credential can be provided as an environment variable or via `~/.netrc` (checked in that order):
+
+```bash
+# Option A: environment variables (e.g. in ~/.bashrc)
+export S2_API_KEY="your-semantic-scholar-key"
+export OPENALEX_MAILTO="you@example.com"
+```
+
+```
+# Option B: ~/.netrc (chmod 600 ~/.netrc)
+machine api.semanticscholar.org
+  login apikey
+  password your-semantic-scholar-key
+
+machine api.openalex.org
+  login you@example.com
+  password none
+```
+
+For Semantic Scholar the key is read from the `password` field; for OpenAlex the email is read from the `login` field (the other field in each entry is ignored but required by netrc syntax).
 </details>
 
 ## Plugins
