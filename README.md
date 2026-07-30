@@ -5,7 +5,7 @@ Collection of reusable skills and plugins for `.claude`, `.cursor`, `.agents`, a
 ## Install
 
 ```bash
-./install.sh [--skills|--plugins|--all] <target> [target...] [options]
+./install.sh [--skills|--agents|--plugins|--all] <target> [target...] [options]
 ```
 
 **Targets:** `claude`, `cursor`, `agents`, `codex`
@@ -15,11 +15,14 @@ Collection of reusable skills and plugins for `.claude`, `.cursor`, `.agents`, a
 | `./install.sh --skills claude` | Skills to `~/.claude/skills/` |
 | `./install.sh --skills claude cursor` | Skills to both targets |
 | `./install.sh --skills claude --local` | Skills to `./.claude/skills/` (current directory) |
+| `./install.sh --agents claude` | Subagents to `~/.claude/agents/` |
 | `./install.sh --plugins claude` | Plugins via Claude Code marketplace |
 | `./install.sh --plugins cursor agents` | Plugins to both targets |
 | `./install.sh --plugins agents --only superpowers` | Single plugin only |
 | `./install.sh --plugins codex --only superpowers` | Superpowers to Codex via the personal marketplace |
-| `./install.sh --all claude` | Skills + plugins to claude |
+| `./install.sh --all claude` | Skills + agents + plugins to claude |
+
+`--agents` only supports the `claude` target — custom subagents invoked via the `Task` tool are a Claude Code-specific mechanism.
 
 Codex reads user skills from `~/.agents/skills`, so use the `agents` target for skills intended for Codex. The `codex` target is for Codex plugins; it creates or updates `~/.agents/plugins/marketplace.json`, links plugin sources under `~/plugins/`, and installs the plugin with the Codex CLI when available.
 
@@ -81,6 +84,32 @@ Builds a single-file Flask + Plotly.js browser-based viewer for exploring datase
 ```
 </details>
 
+<details>
+<summary><strong>research</strong> family — Structured multi-phase research workflow</summary>
+
+A human-in-the-loop research pipeline: build an outline, refine it, run deep per-item research in parallel background agents, then roll everything into a report. Requires the `web-search-agent` subagent (see [Agents](#agents) below) and `pip install pyyaml`.
+
+```
+/research-setup <topic>     # phase 1: generate outline.yaml + fields.yaml
+/research-add-items         # supplement items in outline.yaml before the deep pass
+/research-add-fields        # supplement fields in fields.yaml before the deep pass
+/research                   # phase 2: deep research each item -> results/*.json
+/research-report            # phase 3: roll up results into report.md
+```
+
+Ported from [Weizhena/deep-research-skills](https://github.com/Weizhena/deep-research-skills).
+</details>
+
+## Agents
+
+Custom Claude Code subagents (invoked via `Task`, not slash commands) live under `agents/`. Install with `./install.sh --agents claude`.
+
+<details>
+<summary><strong>web-search-agent</strong> — Multi-source internet research specialist</summary>
+
+Loads topic-specific search strategy modules (GitHub/debugging, academic papers, Stack Overflow, general web, Chinese tech communities) before searching, for more targeted queries. Used internally by the `research` skill family above, but can also be dispatched directly via `Task`.
+</details>
+
 ## Plugins
 
 <details>
@@ -131,6 +160,19 @@ At install time, `install.sh` replaces `{{SKILLS_DIR}}` with the resolved skills
 | `./install.sh --skills cursor --local` | `./.cursor/skills` |
 
 This applies to all `.md` and `.sh` files in the skill directory.
+
+### Adding an agent
+
+Agents are Markdown files under `agents/` (Claude Code custom subagent format: frontmatter with `name`, `description`, optional `model`, then a system prompt body). Unlike skills, agents are not namespaced into per-agent directories — shared resource files (e.g. reference modules) live alongside them directly in `agents/`.
+
+```
+agents/
+  my-agent.md            # Agent definition (uses {{AGENTS_DIR}})
+  my-agent-modules/
+    strategy-a.md         # Reference material the agent Reads at runtime
+```
+
+To reference a shared resource file from an agent's prompt, use the `{{AGENTS_DIR}}` placeholder instead of hardcoding a path — `install.sh --agents` replaces it the same way `{{SKILLS_DIR}}` is replaced for skills.
 
 ### Adding a plugin
 

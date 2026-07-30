@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILLS_SRC="$SCRIPT_DIR/skills"
+AGENTS_SRC="$SCRIPT_DIR/agents"
 CONFIG_DIR="$SCRIPT_DIR/configs/plugins"
 REPOS_DIR="$SCRIPT_DIR/plugins/repos"
 
@@ -10,23 +11,24 @@ REPOS_DIR="$SCRIPT_DIR/plugins/repos"
 
 usage() {
     cat <<EOF
-Usage: install.sh [--skills|--plugins|--all] <target> [target...] [options]
+Usage: install.sh [--skills|--agents|--plugins|--all] <target> [target...] [options]
        install.sh --statusline [claude]
 
 Modes (pick one):
   --skills    Install first-party skills from skills/
+  --agents    Install first-party subagents from agents/ (claude target only)
   --plugins   Install third-party plugins from configs/plugins/
-  --all       Install both skills, plugins, and statusline (claude)
+  --all       Install skills, agents (claude only), plugins, and statusline (claude)
 
 Targets:
-  claude      ~/.claude/{skills,plugins}/
+  claude      ~/.claude/{skills,agents,plugins}/
   cursor      ~/.cursor/{skills,plugins}/
   agents      ~/.agents/{skills,plugins}/
   codex       Codex plugins via ~/.agents/plugins/marketplace.json
               (Codex skills use the agents target: ~/.agents/skills/)
 
 Options:
-  --local         Install skills to ./<target>/skills/ instead of home directory
+  --local         Install skills/agents to ./<target>/{skills,agents}/ instead of home directory
   --only <name>   Install only the named plugin (plugins only)
   --statusline    Install cship statusline (claude only, can be standalone)
   -h, --help      Show this help
@@ -35,11 +37,12 @@ Examples:
   install.sh --skills claude              # skills -> ~/.claude/skills/
   install.sh --skills claude cursor       # skills -> both targets
   install.sh --skills claude --local      # skills -> ./.claude/skills/
+  install.sh --agents claude              # subagents -> ~/.claude/agents/
   install.sh --plugins claude             # plugins via Claude Code marketplace
   install.sh --plugins cursor agents      # plugins -> both targets
   install.sh --plugins agents --only superpowers
   install.sh --plugins codex --only superpowers
-  install.sh --all claude                 # skills + plugins + statusline -> claude
+  install.sh --all claude                 # skills + agents + plugins + statusline -> claude
   install.sh --statusline                 # statusline only -> claude
   install.sh --skills claude --statusline # skills + statusline -> claude
 EOF
@@ -59,6 +62,7 @@ STATUSLINE=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --skills)  MODE="skills" ;;
+        --agents)  MODE="agents" ;;
         --plugins) MODE="plugins" ;;
         --all)     MODE="all" ;;
         claude|cursor|agents|codex) TARGETS+=("$1") ;;
@@ -79,7 +83,7 @@ done
 if [[ -z "$MODE" ]] && $STATUSLINE; then
     [[ ${#TARGETS[@]} -eq 0 ]] && TARGETS+=("claude")
 elif [[ -z "$MODE" ]]; then
-    echo "ERROR: No mode specified (use --skills, --plugins, or --all)."; usage
+    echo "ERROR: No mode specified (use --skills, --agents, --plugins, or --all)."; usage
 fi
 
 [[ ${#TARGETS[@]} -eq 0 ]] && { echo "ERROR: No target specified."; usage; }
@@ -88,8 +92,8 @@ if [[ "$MODE" == "plugins" ]] && $LOCAL; then
     echo "WARNING: --local is ignored for plugins"
 fi
 
-if [[ "$MODE" == "skills" ]] && [[ -n "$ONLY" ]]; then
-    echo "WARNING: --only is ignored for skills"
+if [[ "$MODE" == "skills" || "$MODE" == "agents" ]] && [[ -n "$ONLY" ]]; then
+    echo "WARNING: --only is ignored for $MODE"
 fi
 
 if [[ "$MODE" == "skills" || "$MODE" == "all" ]]; then
@@ -97,6 +101,15 @@ if [[ "$MODE" == "skills" || "$MODE" == "all" ]]; then
         if [[ "$t" == "codex" ]]; then
             echo "ERROR: Codex reads user skills from ~/.agents/skills; use target 'agents' for skills."
             echo "       Use target 'codex' only with --plugins."
+            exit 1
+        fi
+    done
+fi
+
+if [[ "$MODE" == "agents" ]]; then
+    for t in "${TARGETS[@]}"; do
+        if [[ "$t" != "claude" ]]; then
+            echo "ERROR: Custom subagents (Task tool) are a Claude Code-specific mechanism; --agents only supports target 'claude'."
             exit 1
         fi
     done
@@ -160,6 +173,49 @@ install_skills_to_target() {
     local count
     count=$(ls -1d "$staging"/*/ 2>/dev/null | wc -l)
     echo "Done. Installed ${count} skill(s) to $dest_skills"
+    echo ""
+
+    rm -rf "$staging"
+}
+
+# =============================================================================
+# Agents
+# =============================================================================
+
+install_agents_to_target() {
+    local target="$1"
+
+    if $LOCAL; then
+        local dest_base="./.$target"
+        local agents_path="./.$target/agents"
+    else
+        local dest_base="$HOME/.$target"
+        local agents_path="~/.$target/agents"
+    fi
+
+    if [[ ! -d "$AGENTS_SRC" ]]; then
+        echo "No agents found in ${AGENTS_SRC}, skipping."
+        return 0
+    fi
+
+    local dest_agents="$dest_base/agents"
+    echo "Installing agents to: $dest_agents"
+
+    local staging
+    staging=$(mktemp -d)
+
+    cp -r "$AGENTS_SRC"/* "$staging"/
+
+    # Replace {{AGENTS_DIR}} in staged files
+    find "$staging" -type f -name '*.md' \
+        -exec sed -i "s|{{AGENTS_DIR}}|$agents_path|g" {} +
+
+    mkdir -p "$dest_agents"
+    cp -r "$staging"/* "$dest_agents"/
+
+    local count
+    count=$(find "$staging" -maxdepth 1 -type f -name '*.md' | wc -l)
+    echo "Done. Installed ${count} agent(s) to $dest_agents"
     echo ""
 
     rm -rf "$staging"
@@ -531,6 +587,19 @@ install_plugins() {
 if [[ "$MODE" == "skills" || "$MODE" == "all" ]]; then
     for target in "${TARGETS[@]}"; do
         install_skills_to_target "$target"
+    done
+fi
+
+if [[ "$MODE" == "agents" ]]; then
+    for target in "${TARGETS[@]}"; do
+        install_agents_to_target "$target"
+    done
+fi
+
+# --all only installs agents for the claude target (Task subagents are Claude Code-specific)
+if [[ "$MODE" == "all" ]]; then
+    for target in "${TARGETS[@]}"; do
+        [[ "$target" == "claude" ]] && install_agents_to_target "$target"
     done
 fi
 

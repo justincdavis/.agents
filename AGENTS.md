@@ -4,7 +4,7 @@ This file provides guidance to AI agents when working with code in this reposito
 
 ## What This Repo Is
 
-A collection of reusable skills and plugin configurations for `.claude`, `.cursor`, and `.agents` tooling. It provides two mechanisms for extending AI coding assistants: **skills** (first-party, in `skills/`) and **plugins** (third-party, managed via `configs/plugins/`).
+A collection of reusable skills and plugin configurations for `.claude`, `.cursor`, and `.agents` tooling. It provides three mechanisms for extending AI coding assistants: **skills** (first-party, in `skills/`), **agents** (first-party Claude Code subagents, in `agents/`), and **plugins** (third-party, managed via `configs/plugins/`).
 
 ## Key Commands
 
@@ -13,12 +13,15 @@ A collection of reusable skills and plugin configurations for `.claude`, `.curso
 ./install.sh --skills claude            # -> ~/.claude/skills/
 ./install.sh --skills cursor --local    # -> ./.cursor/skills/ (current directory)
 
+# Install first-party subagents (claude target only)
+./install.sh --agents claude            # -> ~/.claude/agents/
+
 # Install third-party plugins
 ./install.sh --plugins claude            # via Claude Code plugin marketplace
 ./install.sh --plugins cursor agents     # symlink into both targets
 ./install.sh --plugins agents --only superpowers  # single plugin only
 
-# Install both
+# Install everything (skills + agents (claude only) + plugins)
 ./install.sh --all claude
 ```
 
@@ -32,13 +35,17 @@ Each skill is a directory containing a `SKILL.md` (frontmatter + instructions) a
 
 Skill frontmatter fields: `name`, `description`, `user-invocable`, `context`, `model`, `allowed-tools`, `argument-hint`.
 
+### Agents (`agents/`)
+
+Custom Claude Code subagents (dispatched via the `Task` tool, not slash commands). Each is a single Markdown file with `name`/`description`/`model` frontmatter and a system-prompt body -- unlike skills, agents are not namespaced into per-agent directories, so shared resource files (e.g. reference modules an agent `Read`s at runtime) sit alongside the agent file directly under `agents/`. Agents use `{{AGENTS_DIR}}` as their install-path placeholder, replaced the same way `{{SKILLS_DIR}}` is for skills. `install.sh --agents` only supports the `claude` target, since custom subagents are a Claude Code-specific mechanism.
+
 ### Plugins (`configs/plugins/`)
 
 Third-party plugins are defined as JSON configs. `install.sh --plugins` reads these, clones repos into `plugins/repos/` (gitignored), and either installs via Claude Code marketplace or symlinks into the target directory. The `enabled` field controls whether a plugin is installed by default or only when explicitly named with `--only`.
 
 ### Install flow
 
-`install.sh` is a unified script with `--skills`, `--plugins`, and `--all` modes. Skills mode stages to a temp directory, runs `sed` to replace `{{SKILLS_DIR}}` in all `.md` and `.sh` files, then copies into the destination. This staging avoids issues when source and destination overlap (e.g., installing to `~/.agents/skills/` from within `~/.agents/`).
+`install.sh` is a unified script with `--skills`, `--agents`, `--plugins`, and `--all` modes. Skills mode stages to a temp directory, runs `sed` to replace `{{SKILLS_DIR}}` in all `.md` and `.sh` files, then copies into the destination. Agents mode does the same for `{{AGENTS_DIR}}` in `.md` files. This staging avoids issues when source and destination overlap (e.g., installing to `~/.agents/skills/` from within `~/.agents/`).
 
 Plugins mode requires `python3` (for JSON parsing) and `git`. For Claude target, it uses `claude plugin marketplace add` and `claude plugin install`. For cursor/agents targets, it shallow-clones repos and creates symlinks.
 
@@ -46,5 +53,6 @@ Plugins mode requires `python3` (for JSON parsing) and `git`. For Claude target,
 
 - Skills are self-contained directories under `skills/` -- each must have a `SKILL.md`.
 - Helper scripts go in `scripts/` within the skill directory, and can also use `{{SKILLS_DIR}}`.
+- Agents are flat Markdown files under `agents/`, plus any shared resource files/dirs they reference via `{{AGENTS_DIR}}`.
 - Plugin configs go in `configs/plugins/` as individual JSON files.
 - The `plugins/` directory (where repos are cloned) is gitignored.
