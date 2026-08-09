@@ -101,6 +101,18 @@ A human-in-the-loop research pipeline: build an outline, refine it, run deep per
 Ported from [Weizhena/deep-research-skills](https://github.com/Weizhena/deep-research-skills).
 </details>
 
+<details>
+<summary><strong>humanize-paper</strong> — Revise a paper into a target voice with an adversarial critic</summary>
+
+Restyles a document into the voice defined by a style-guide markdown file, using two subagents ping-ponged to consensus: a humanizer that rewrites, and a fresh adversarial critic that audits each pass on both voice fidelity and the hard rule that no fact changed. The orchestrator runs an independent numeric/citation diff against a baseline commit every round, so a restyle can never silently corrupt a value.
+
+```
+/humanize-paper
+```
+
+Give it the document and a style guide (e.g. `HUMANIZE.md`). Format-agnostic: works on LaTeX or plain markdown.
+</details>
+
 ## Agents
 
 Custom Claude Code subagents (invoked via `Task`, not slash commands) live under `agents/`. Install with `./install.sh --agents claude`.
